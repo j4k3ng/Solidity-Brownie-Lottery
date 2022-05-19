@@ -4,35 +4,35 @@ pragma solidity ^0.6.6;
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 contract Lottery {
-    address payable[] public players;
-    uint256 public usdEntryFee;
+    address payable[] internal players;
+    uint256 internal usdEntryFee;
     AggregatorV3Interface internal ethUsdPriceFeed;
+    bool internal isRunning;
+    address internal owner;
 
     constructor(address _priceFeedAddress) public {
         usdEntryFee = 1; 
         ethUsdPriceFeed = AggregatorV3Interface(_priceFeedAddress);
+        isRunning = true;
+        owner = msg.sender;
     }
 
-    function retrieveEntryCondition() public payable {
-        uint256 ethUsdPrice = retrieveEthPrice();
-        uint256 weiRequired = 10**18 * 10**9 * usdEntryFee / ethUsdPrice;  // first I multiply for 10**9 because the denomitore is in gwei, then the result is in eth so I need to multiply to 10**18 to get the corrispondent wei.
-        require(msg.value >= weiRequired,"not enough founds, minimum required is 50 usd" );
+    modifier onlyOwnerOnce() {
+        require(msg.sender == owner && isRunning == true);
+        _;
     }
 
     function retrieveEthPrice() public view returns (uint256) {
-        (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = ethUsdPriceFeed.latestRoundData();
-        return uint256(answer);
+        (, int256 price,,,) = ethUsdPriceFeed.latestRoundData();
+        return uint256(price);
     } 
 
     function enter() public payable {
         //push the address of the sender
-        // require(50/getConversionRate(msg.value)>= minimum, "you need at least 50 usd");
+        require(isRunning == true, "the lottery is closed" );
+        uint256 ethUsdPrice = retrieveEthPrice();
+        uint256 weiRequired = 10**18 * 10**9 * usdEntryFee / ethUsdPrice;  // first I multiply for 10**9 because the denomitore is in gwei, then the result is in eth so I need to multiply to 10**18 to get the corrispondent wei.
+        require(msg.value >= weiRequired, "not enough founds, minimum required is 50 usd" );
         players.push(msg.sender);
     }
 
@@ -44,7 +44,10 @@ contract Lottery {
     //     return costToEnter;
     // }
 
-    function startLottery() public {}
+    // function startLottery() public {}
 
-    function endLottery() public {}
+
+    function endLottery() public onlyOwnerOnce {
+        isRunning = false;
+    }
 }
