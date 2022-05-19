@@ -30,19 +30,16 @@ contract Lottery {
     function enter() public payable {
         //push the address of the sender
         require(isRunning == true, "the lottery is closed" );
-        uint256 ethUsdPrice = retrieveEthPrice();
-        uint256 weiRequired = 10**18 * 10**9 * usdEntryFee / ethUsdPrice;  // first I multiply for 10**9 because the denomitore is in gwei, then the result is in eth so I need to multiply to 10**18 to get the corrispondent wei.
-        require(msg.value >= weiRequired, "not enough founds, minimum required is 50 usd" );
+        require(msg.value >= getEntranceFee(), "not enough founds, minimum required is 50 usd" );
         players.push(msg.sender);
     }
 
 
-    // function getEntranceFee() public view returns (uint256) {
-    //     (,int256 price,,,) = ethUsdPriceFeed.latestRoundData;
-    //     uint256 adjustPrice = uint256(price) * 10**10;
-    //     uint256 costToEnter = (usdEntryFee *10**18) / price;
-    //     return costToEnter;
-    // }
+    function getEntranceFee() public view returns (uint256) {
+        uint256 ethUsdPrice = retrieveEthPrice();
+        uint256 weiRequired = 10**18 * 10**9 * usdEntryFee / ethUsdPrice;  // first I multiply for 10**9 because the denomitore is in gwei, then the result is in eth so I need to multiply to 10**18 to get the corrispondent wei.
+        return weiRequired;
+    }
 
     // function startLottery() public {}
 
